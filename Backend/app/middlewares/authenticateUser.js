@@ -17,4 +17,4 @@ const authenticateUser = (req,res,next)=>{
     
 }   
 
-export default authenticateUser
+export default authenticateUser;

@@ -26,7 +26,7 @@ userCltr.register = async(req,res)=>{
         res.status(201).json(user)
     }catch(err){
         console.log(err)
-        res.status(500).json('something went wrong')
+        return res.status(500).json({error:'something went wrong'})
     }
 }
 

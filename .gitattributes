@@ -1,2 +1,12 @@
-# Enforce LF for all text files
-* text eol=lf
+# Treat all JavaScript files as text and set them to LF line endings
+*.js text eol=lf
+
+# Treat JSON files as text and set them to LF line endings
+*.json text eol=lf
+
+# Treat image files as binary (no line ending changes)
+*.jpg binary
+*.png binary
+
+# Treat Markdown files as text and set them to LF line endings
+*.md text eol=lf

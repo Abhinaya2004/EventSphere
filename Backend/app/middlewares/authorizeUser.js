@@ -8,4 +8,4 @@ const authorizeUser = (permittedRoles)=>{
     }
 }
 
-export default authorizeUser
+export default authorizeUser;
