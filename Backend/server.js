@@ -12,9 +12,12 @@ import { Server } from 'socket.io'
 
 const app = express()
 const port =  process.env.PORT
-console.log(process.env.EMAIL)
+
 import userRoute from './app/routes/userRoute.js'
 import additionalDetailsRoute from './app/routes/additionalDetailsRoute.js'
+import venueRoute from './app/routes/venueRoute.js'
+import adminRoute from './app/routes/adminRoute.js'
+
 
 app.use(express.json())
 app.use(cors())
@@ -26,13 +29,16 @@ cloudinary.v2.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
 
-  console.log(process.env.CLOUDINARY_CLOUD_NAME)
+ 
 
 const server = http.createServer(app)
 const io = new Server(server,{})
 
 app.use('/api/users',userRoute)
 app.use('/api',additionalDetailsRoute)
+app.use('/api/venues',venueRoute)
+
+app.use("/api/admin", adminRoute);
 
 server.listen(port,()=>{
     console.log('server is running on port,',port)

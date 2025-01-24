@@ -66,7 +66,6 @@ userCltr.requestOtp = async(req,res)=>{
             return res.status(404).json({ error: 'Email not found' })
         }
 
-       
         user.otp = generateOtp()
         user.otpExpiry = otpExpiry
 

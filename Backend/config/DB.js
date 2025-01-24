@@ -9,5 +9,4 @@ const ConfigDb = async()=>{
     }
 }
 
-
 export default ConfigDb

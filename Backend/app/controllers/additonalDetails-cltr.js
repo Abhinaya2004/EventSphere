@@ -30,8 +30,6 @@ additionalDetailsCltr.create = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-   
-
     // Upload file to Cloudinary
     
     const result = await cloudinary.v2.uploader.upload(req.file.path, {
@@ -50,7 +48,7 @@ additionalDetailsCltr.create = async (req, res) => {
 
     // Create new details
     const newDetails = await AdditionalDetails.create({
-      userId,
+      userId:req.currentUser.userId,
       organizationName,
       panCardNumber,
       organizationAddress,
