@@ -133,4 +133,5 @@ userCltr.resetPassword = async(req,res)=>{
         return res.status(500).json({error:'something went wrong'})
     }
 }
+
 export default userCltr
