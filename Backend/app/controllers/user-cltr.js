@@ -30,32 +30,37 @@ userCltr.register = async(req,res)=>{
     }
 }
 
-userCltr.login = async(req,res)=>{
-    const Errors = validationResult(req)
-    if(!Errors.isEmpty()){
-        return res.status(400).json(Errors.array())
+userCltr.login = async (req, res) => {
+    const Errors = validationResult(req);
+    if (!Errors.isEmpty()) {
+        return res.status(400).json(Errors.array());
     }
-    const {email,password} = req.body
-    try{
-        const user = await User.findOne({email})
-        if(!user){
-            return res.status(404).json({error:'invalid email/password'})
+
+    const { email, password, role } = req.body; // Role must be sent from the frontend
+
+    try {
+        // Find user with matching email and role
+        const user = await User.findOne({ email, role });
+        if (!user) {
+            return res.status(404).json({ error: "Invalid email, password, or role" });
         }
 
-        const isVerified = await bcrypt.compare(password,user.password)
-        if(!isVerified){
-            return res.status(404).json({error:'invalid email/password'})
+        // Check if the password is correct
+        const isVerified = await bcrypt.compare(password, user.password);
+        if (!isVerified) {
+            return res.status(404).json({ error: "Invalid email, password, or role" });
         }
 
-        const tokenData = {userId : user._id, role : user.role} 
-        const token = jwt.sign(tokenData,process.env.SECRET_KEY,{expiresIn: '7d'})
+        // Generate JWT token with user ID and role
+        const tokenData = { userId: user._id, role: user.role };
+        const token = jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: "7d" });
 
-        res.json({token:`Bearer ${token}`})
-    }catch(err){
-        console.log(err)
-        return res.status(500).json('something went wrong')
+        res.json({ token: `Bearer ${token}` });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ error: "Something went wrong" });
     }
-}
+};
 
 userCltr.requestOtp = async(req,res)=>{
     const {email} = req.body
@@ -128,6 +133,20 @@ userCltr.resetPassword = async(req,res)=>{
         await user.save()
 
         res.status(200).json({ message: 'Password reset successfully' });
+    }catch(err){
+        console.log(err)
+        return res.status(500).json({error:'something went wrong'})
+    }
+}
+
+userCltr.account =async (req,res)=>{
+    
+    try{
+        const {email,password,role} =await User.findById(req.currentUser.userId)
+        if(!email){
+            return res.status(404).json({ error: 'User not found' })
+        }
+        res.json({email,password,role});
     }catch(err){
         console.log(err)
         return res.status(500).json({error:'something went wrong'})

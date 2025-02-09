@@ -5,7 +5,7 @@ import Register from './pages/Register'
 import Login from './pages/Login'
 import Navbar from './components/Navbar'
 
-const App = () => {
+const App = (props) => {
   return (
     <div>
       <Navbar/>
