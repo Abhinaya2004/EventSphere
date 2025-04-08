@@ -4,6 +4,7 @@ import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import nodemailer from 'nodemailer'
 import { validationResult } from "express-validator";
+import AdditionalDetails from "../models/additionalDetails-model.js";
 const userCltr = {}
 
 const generateOtp = ()=>{
@@ -12,63 +13,60 @@ const generateOtp = ()=>{
 
 const otpExpiry = new Date(Date.now() + (5 * 60 * 1000))
 
-userCltr.register = async(req,res)=>{
+userCltr.register = async (req, res) => {
     const Errors = validationResult(req)
     if(!Errors.isEmpty()){
-        return res.status(400).json(Errors.array())
+        return res.status(400).json({ errors: Errors.array()[0].msg })
     }
-    const body = req.body
-    try{
-        const salt =await bcrypt.genSalt()
-        body.password =await bcrypt.hash(body.password,salt)
-
+    try {
         const user=await User.create(body)
         res.status(201).json(user)
     }catch(err){
         console.log(err)
-        return res.status(500).json({error:'something went wrong'})
+        return res.status(500).json({ errors: 'something went wrong' })
     }
 }
 
 userCltr.login = async (req, res) => {
-    const Errors = validationResult(req);
-    if (!Errors.isEmpty()) {
-        return res.status(400).json(Errors.array());
+    const Errors = validationResult(req)
+    if(!Errors.isEmpty()){
+        return res.status(400).json({ errors: Errors.array()[0].msg })
     }
-
-    const { email, password, role } = req.body; // Role must be sent from the frontend
-
     try {
-        // Find user with matching email and role
-        const user = await User.findOne({ email, role });
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
         if (!user) {
-            return res.status(404).json({ error: "Invalid email, password, or role" });
+            return res.status(404).json({ errors: "Invalid email, password, or role" });
         }
 
-        // Check if the password is correct
-        const isVerified = await bcrypt.compare(password, user.password);
-        if (!isVerified) {
-            return res.status(404).json({ error: "Invalid email, password, or role" });
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(404).json({ errors: "Invalid email, password, or role" });
         }
 
-        // Generate JWT token with user ID and role
-        const tokenData = { userId: user._id, role: user.role };
-        const token = jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: "7d" });
+        const token = jwt.sign(
+            { userId: user._id, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "24h" }
+        );
 
-        res.json({ token: `Bearer ${token}` });
-    } catch (err) {
-        console.log(err);
-        return res.status(500).json({ error: "Something went wrong" });
+        res.json({ token, user: { email: user.email, role: user.role } });
+    } catch (error) {
+        return res.status(500).json({ errors: "Something went wrong" });
     }
 };
 
 userCltr.requestOtp = async(req,res)=>{
-    const {email} = req.body
+    const Errors = validationResult(req);
+    if (!Errors.isEmpty()) {
+        return res.status(400).json({ errors: Errors.array() });
+    }
+    const {email,role} = req.body
 
     try{
-        const user = await User.findOne({email})
+        const user = await User.findOne({email,role})
         if(!user){
-            return res.status(404).json({ error: 'Email not found' })
+            return res.status(404).json({ errors: 'User not found' })
         }
 
         user.otp = generateOtp()
@@ -94,62 +92,79 @@ userCltr.requestOtp = async(req,res)=>{
           res.status(200).json({ message: 'OTP sent to email' });
     }catch(err){
         console.log(err)
-        return res.status(500).json({error:'something went wrong'})
+        return res.status(500).json({ errors: 'something went wrong' })
     }
 }
 
-userCltr.verifyOtp = async(req,res)=>{
-    const {email,otp} = req.body
-
-    try{
-        const user = await User.findOne({email})
-
-        if (!user || user.otp !== otp || user.otpExpiry < Date.now()) {
-            return res.status(400).json({ error: 'Invalid or expired OTP' });
+userCltr.verifyOtp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ errors: "User not found" });
         }
 
-        user.otp = null
-        user.otpExpiry = null
+        try{
+            const user = await User.findOne({email,role})
+            console.log(user)
+            console.log(user.otp)
+
+            if (!user || user.otp !== otp || user.otpExpiry < Date.now()) {
+                return res.status(400).json({ errors: 'Invalid or expired OTP' });
+            }
+
+            user.otp = null;
+            user.otpExpiry = null;
+            await user.save();
+
+            res.json({ message: "OTP verified successfully" });
+        } catch (error) {
+            return res.status(500).json({ errors: "Something went wrong" });
+        }
+    } catch (error) {
+        return res.status(500).json({ errors: "Something went wrong" });
+    }
+};
+
+userCltr.resetPassword = async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ errors: "User not found" });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
         await user.save();
 
-        res.status(200).json({ message: 'OTP verified successfully' });
-
-    }catch(err){
-        console.log(err)
-        return res.status(500).json({error:'something went wrong'})
+        res.json({ message: "Password reset successfully" });
+    } catch (error) {
+        return res.status(500).json({ errors: "Something went wrong" });
     }
-}
+};
 
-userCltr.resetPassword = async(req,res)=>{
-    const {email,newPassword} = req.body
+userCltr.account = async (req,res)=>{
     try{
-        const user = User.findOne({email})
-        if(!user){
-            return res.status(404).json({ error: 'Email not found' })
-        }
-
-        const hashedPassword =await bcrypt.hash(newPassword, 10)
-        user.password = hashedPassword
-        await user.save()
-
-        res.status(200).json({ message: 'Password reset successfully' });
-    }catch(err){
-        console.log(err)
-        return res.status(500).json({error:'something went wrong'})
-    }
-}
-
-userCltr.account =async (req,res)=>{
-    
-    try{
-        const {email,password,role} =await User.findById(req.currentUser.userId)
+        const {email,password,role,_id} = await User.findById(req.currentUser.userId)
+        const additonal = await AdditionalDetails.findById(req.currentUser.userId)
         if(!email){
-            return res.status(404).json({ error: 'User not found' })
+            return res.status(404).json({ errors: 'User not found' })
         }
-        res.json({email,password,role});
+        res.json({email,password,role,_id,"additionDetails":additonal?true:false});
     }catch(err){
         console.log(err)
-        return res.status(500).json({error:'something went wrong'})
+        return res.status(500).json({ errors: 'something went wrong' })
+    }
+}
+
+userCltr.users = async (req,res)=>{
+    try{
+        const users = await User.find()
+        res.json(users);
+    }catch(err){
+        console.log(err)
+        return res.status(500).json({ errors: 'something went wrong' })
     }
 }
 

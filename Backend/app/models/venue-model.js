@@ -21,11 +21,9 @@ const venueSchema = new Schema({
   price: {
     dailyRate: {
       type: Number,
-      required: true,
     },
     hourlyRate: {
       type: Number,
-      required: true,
     },
     minHourlyDuration: {
       type: Number,

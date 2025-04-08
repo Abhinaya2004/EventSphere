@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Container, Typography, TextField, Button, ToggleButton, ToggleButtonGroup, Box, Link ,FormHelperText,Alert,List,ListItem } from "@mui/material";
 import axios from 'axios'
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Register = () => {
   const navigate = useNavigate()
@@ -43,17 +44,35 @@ const handleSubmit = async (e) => {
     
     const clientValidationsErrors = runClientValidations(); 
 
-    console.log(clientValidationsErrors);
+    // console.log(clientValidationsErrors);
 
     if (Object.keys(clientValidationsErrors).length === 0) {
         try {
             setServerErrors({});
             const response = await axios.post('http://localhost:2025/api/users/register', formData);
             console.log(response)
+            toast.success("User registered successfully!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: true,
+                    closeOnClick: true,
+                    pauseOnHover: false,
+                    draggable: true,
+                    theme: "dark",
+                  });
             navigate('/login');
         } catch (err) {
-            setServerErrors(err.response?.data);
-            
+            if (err.response) {
+                let errors = err.response.data;
+                // console.log("Errors received:", errors); // Debugging
+                if (errors.errors) {
+                    setServerErrors([{ errors: errors.errors }]);
+                } else {
+                    setServerErrors([{ errors: "Registration failed" }]);
+                }
+            } else {
+                setServerErrors([{ errors: "Server is not responding. Try again later." }]);
+            }
         }
         setClientErrors({});
     } else {
@@ -69,15 +88,19 @@ const handleSubmit = async (e) => {
         <Typography variant="h4" sx={{ fontWeight: "bold", color: "#FBFBFB" }} gutterBottom>
           Register
         </Typography>
-        {serverErrors && serverErrors.length > 0 && (
+        {serverErrors && (
             <Alert severity="error" sx={{ mb: 2, backgroundColor: "#2E2E2E", color: "#FBFBFB" }}>
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>Server Errors</Typography>
             <List sx={{ paddingLeft: 2 }}>
-              {serverErrors.map((ele, i) => (
+              {Array.isArray(serverErrors) ? serverErrors.map((error, i) => (
                 <ListItem key={i} sx={{ display: "list-item", color: "#FF6961" }}>
-                  {ele.msg}
+                  {error.errors || error.msg}
                 </ListItem>
-              ))}
+              )) : (
+                <ListItem sx={{ color: "#FF6961" }}>
+                  {typeof serverErrors === 'object' ? serverErrors.errors : serverErrors}
+                </ListItem>
+              )}
             </List>
             </Alert>
         )}

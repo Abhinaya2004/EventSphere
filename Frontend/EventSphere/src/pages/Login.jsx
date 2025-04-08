@@ -1,8 +1,11 @@
 import { useContext, useState } from "react";
-import { Container, Typography, TextField, Button, ToggleButton, ToggleButtonGroup, Box, Link ,FormHelperText,Alert,List,ListItem } from "@mui/material";
+import { Container, Typography, TextField, Button, ToggleButton, ToggleButtonGroup, Box, Link as MuiLink,FormHelperText,Alert,List,ListItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axios from 'axios'
 import AuthContext from "../context/Auth";
+import { toast } from "react-toastify";
+
 
  
 const Login = () => {
@@ -12,7 +15,7 @@ const Login = () => {
     password: '',
     role: 'user'
 })
-  const {handleLogin} = useContext(AuthContext)
+  const {handleLogin,userState} = useContext(AuthContext)
 
 
 const handleRoleChange = (event,newRole) => {
@@ -46,7 +49,7 @@ const handleSubmit = async (e) => {
     
     const clientValidationsErrors = runClientValidations(); 
 
-    console.log(clientValidationsErrors);
+    // console.log(clientValidationsErrors);
 
     if (Object.keys(clientValidationsErrors).length === 0) {
         try {
@@ -60,11 +63,37 @@ const handleSubmit = async (e) => {
               },
             });
             handleLogin(userResponse.data)
-            console.log(userResponse.data)
-            navigate('/');
+            // console.log(userResponse.data)
+            toast.success("Logged in successfully!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: true,
+                    closeOnClick: true,
+                    pauseOnHover: false,
+                    draggable: true,
+                    theme: "dark",
+                  });
+                  if (userResponse.data.role === "host") {
+                    navigate("/host/events");
+                  } else if (userResponse.data.role === "renter") {
+                    navigate("/renter/venues");
+                  } else if (userResponse.data.role === "admin") {
+                    navigate("/admin/dashboard");
+                  } else {
+                    navigate("/user/book-event");
+                  }
         } catch (err) {
-            setServerErrors(err.response?.data);
-            
+            if (err.response) {
+                let errors = err.response.data;
+                // console.log("Errors received:", errors); // Debugging
+                if (errors.errors) {
+                    setServerErrors([{ errors: errors.errors }]);
+                } else {
+                    setServerErrors([{ errors: "Login failed" }]);
+                }
+            } else {
+                setServerErrors([{ errors: "Server is not responding. Try again later." }]);
+            }
         }
         setClientErrors({});
     } else {
@@ -80,15 +109,19 @@ const handleSubmit = async (e) => {
         <Typography variant="h4" sx={{ fontWeight: "bold", color: "#FBFBFB" }} gutterBottom>
           Login
         </Typography>
-        {serverErrors && serverErrors.length > 0 && (
+        {serverErrors && (
             <Alert severity="error" sx={{ mb: 2, backgroundColor: "#2E2E2E", color: "#FBFBFB" }}>
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>Server Errors</Typography>
             <List sx={{ paddingLeft: 2 }}>
-              {serverErrors.map((ele, i) => (
+              {Array.isArray(serverErrors) ? serverErrors.map((error, i) => (
                 <ListItem key={i} sx={{ display: "list-item", color: "#FF6961" }}>
-                  {ele.msg}
+                  {error.errors || error.msg}
                 </ListItem>
-              ))}
+              )) : (
+                <ListItem sx={{ color: "#FF6961" }}>
+                  {typeof serverErrors === 'object' ? serverErrors.errors : serverErrors}
+                </ListItem>
+              )}
             </List>
             </Alert>
         )}
@@ -146,7 +179,13 @@ const handleSubmit = async (e) => {
       </Button>
     </form>
     <Box sx={{ mt: 2 }}>
-          <Link href="/forgot-password" sx={{ color: "#C5BAFF" }}>Forgot Password?</Link>
+    <MuiLink component={Link} to="/forgot-password" sx={{
+      color: "#C5BAFF",
+      textDecoration: "none",
+      "&:hover": { textDecoration: "underline" }, // Adds underline on hover
+    }}>
+      Forgot Password?
+    </MuiLink>
     </Box> 
     </Container>
     </Box>

@@ -17,9 +17,12 @@ import userRoute from './app/routes/userRoute.js'
 import additionalDetailsRoute from './app/routes/additionalDetailsRoute.js'
 import venueRoute from './app/routes/venueRoute.js'
 import adminRoute from './app/routes/adminRoute.js'
+import eventRoute from './app/routes/eventRoute.js'
+import paymentRoute from './app/routes/paymentRoute.js'
 
 
 app.use(express.json())
+app.use(express.urlencoded({ extended: true })); 
 app.use(cors())
 
 // Configure Cloudinary
@@ -37,8 +40,9 @@ const io = new Server(server,{})
 app.use('/api/users',userRoute)
 app.use('/api',additionalDetailsRoute)
 app.use('/api/venues',venueRoute)
-
-app.use("/api/admin", adminRoute);
+app.use('/api/events',eventRoute)
+app.use("/api/admin", adminRoute)
+app.use('/api',paymentRoute)
 
 server.listen(port,()=>{
     console.log('server is running on port,',port)

@@ -2,6 +2,7 @@ import AuthContext from "../context/Auth.jsx";
 import { useEffect, useReducer } from "react";
 import userReducer from "../reducers/user-reducer.js";
 import { useNavigate } from "react-router-dom";
+import axios from 'axios'
 const initialState = {
     isLoggedIn: false,
     user: null
@@ -13,11 +14,13 @@ const AuthProvider = (props) => {
   const handleLogin = (user)=>{
     userDispatch({type:'LOGIN',payload:user})
   }
-  const handleLogout = ()=>{
-    localStorage.removeItem('token')
-    userDispatch({type:'LOGOUT'})
+  
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    userDispatch({ type: "LOGOUT" });
     navigate('/')
-  }
+    window.location.reload(); // Force full UI update
+  };
 
   useEffect(()=>{
     (async()=>{
@@ -27,10 +30,11 @@ const AuthProvider = (props) => {
             Authorization: localStorage.getItem('token'),
           },
         });
+        // console.log(userResponse)
         handleLogin(userResponse.data)
       }
     })();
-  })
+  },[])
   return (
     <div>
         <AuthContext.Provider value={{userState,handleLogin,handleLogout}}>

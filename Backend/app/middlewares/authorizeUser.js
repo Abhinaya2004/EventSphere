@@ -5,6 +5,7 @@ const authorizeUser = (permittedRoles)=>{
         }else{
             return res.status(403).json({errors:'unautorized access'})
         }
+        next();
     }
 }
 

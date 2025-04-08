@@ -7,6 +7,8 @@ import authenticateUser from "../middlewares/authenticateUser.js";
 import authorizeUser from "../middlewares/authorizeUser.js";
 
 const router = express.Router()
+router.get("/verified",authenticateUser,
+  authorizeUser(["host","admin"]),venueCltr.getVerifiedVenues);
 
 router.post('/create',upload.fields([
         { name: "images", maxCount: 5 }, // Max 5 images
@@ -19,13 +21,13 @@ authorizeUser(["renter","admin"]),venueCltr.createVenue);
 
 router.get("/", venueCltr.getAllVenues);
 
-// router.get("/:id", venueCltr.getVenueById);
+router.get("/:id", authenticateUser,
+  authorizeUser(["renter","host","admin"]),venueCltr.getVenueById);
 
-router.get("/owner/:ownerId",authenticateUser,
-authorizeUser(["renter","admin"]), venueCltr.getVenuesByOwner);
+router.get("/owner/:id",authenticateUser,
+authorizeUser(["renter"]), venueCltr.getVenuesByOwner);
 
-router.get("/verified",authenticateUser,
-  authorizeUser(["host","admin"]),venueCltr.getVerifiedVenues);
+
 
 router.delete("/delete/:id",authenticateUser,
 authorizeUser(["renter","admin"]),venueCltr.deleteVenue)

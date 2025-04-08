@@ -9,6 +9,7 @@ const authenticateUser = (req,res,next)=>{
     try{
         const tokenData = jwt.verify(token,process.env.SECRET_KEY);
         req.currentUser = {userId : tokenData.userId,role : tokenData.role}
+        // console.log(req.currentUser)
         next()
     }
     catch(err){

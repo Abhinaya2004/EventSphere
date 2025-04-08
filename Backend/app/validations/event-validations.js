@@ -64,50 +64,83 @@ export const eventValidationSchema = {
     },
     venue: {
       optional: true,
-      isMongoId: {
-        errorMessage: "Invalid venue ID",
+      custom: {
+        options: (value, { req }) => {
+          if (req.body.mode === "Offline" && !value && !req.body.customAddress) {
+            throw new Error("Please provide either a venue or a custom address for Offline events.");
+          }
+          return true;
+        },
+      },
+      
+      custom: {
+        options: (value, { req }) => {
+          if (req.body.mode === "Offline" && value && !/^[0-9a-fA-F]{24}$/.test(value)) {
+            throw new Error("Invalid venue ID");
+          }
+          return true;
+        },
       },
     },
     customAddress: {
       optional: true,
       trim: true,
-      isLength: {
-        options: { min: 5 },
-        errorMessage: "Address must be at least 5 characters long",
-      },
-    },
-    organizer: {
-      exists: {
-        errorMessage: "Organizer ID must be provided",
-      },
-      isMongoId: {
-        errorMessage: "Invalid organizer ID",
-      },
-    },
-    ticketTypes: {
-      isArray: {
-        errorMessage: "Ticket types must be an array",
-      },
       custom: {
-        options: (ticketTypes) => {
-          if (!ticketTypes.length) {
-            throw new Error("At least one ticket type must be provided");
+        options: (value, { req }) => {
+          if (req.body.mode === "Offline" && !req.body.venue && (!value || value.trim().length < 5)) {
+            throw new Error("Custom address must be at least 5 characters long for Offline events.");
           }
-          ticketTypes.forEach((ticket) => {
-            if (!ticket.name || typeof ticket.name !== "string") {
-              throw new Error("Each ticket type must have a valid name");
-            }
-            if (!ticket.price || isNaN(ticket.price) || ticket.price <= 0) {
-              throw new Error("Each ticket type must have a valid positive price");
-            }
-            if (!ticket.availableQuantity || isNaN(ticket.availableQuantity) || ticket.availableQuantity <= 0) {
-              throw new Error("Each ticket type must have a valid positive quantity");
-            }
-          });
           return true;
         },
       },
     },
+  
+    // 🔹 Streaming Link validation (only if mode is Online)
+    streamingLink: {
+      optional: true,
+      custom: {
+        options: (value, { req }) => {
+          if (req.body.mode === "Online" && (!value || !/^https?:\/\/.+/i.test(value))) {
+            throw new Error("A valid streaming link is required for Online events.");
+          }
+          return true;
+        },
+      },
+    },
+  
+    ticketTypes: {
+      custom: {
+        options: (value, { req }) => {
+          // Parse ticketTypes if it's a string
+          if (typeof value === "string") {
+            try {
+              value = JSON.parse(value);
+            } catch (error) {
+              throw new Error("Invalid ticketTypes format. Must be a valid JSON array.");
+            }
+          }
+    
+          if (!Array.isArray(value) || value.length === 0) {
+            throw new Error("Ticket types must be a non-empty array.");
+          }
+    
+          value.forEach((ticket) => {
+            if (!ticket.name || typeof ticket.name !== "string") {
+              throw new Error("Each ticket type must have a valid name.");
+            }
+            if (!ticket.price || isNaN(ticket.price) || ticket.price <= 0) {
+              throw new Error("Each ticket type must have a valid positive price.");
+            }
+            if (!ticket.availableQuantity || isNaN(ticket.availableQuantity) || ticket.availableQuantity <= 0) {
+              throw new Error("Each ticket type must have a valid positive quantity.");
+            }
+          });
+    
+          return true;
+        },
+      },
+    },
+    
     images: {
       optional: true,
       isArray: {

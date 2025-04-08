@@ -2,11 +2,12 @@ import { validationResult } from "express-validator";
 import Venue from "../models/venue-model.js";
 import cloudinary from 'cloudinary'
 const venueCltr = {}
+import mongoose, { Mongoose } from "mongoose";
 
 venueCltr.createVenue = async (req,res)=>{
     const Errors = validationResult(req)
     if(!Errors.isEmpty()){
-        return res.status(400).json(Errors.array())
+        return res.status(400).json({ errors: Errors.array()[0].msg })
     }
     try {
         const {
@@ -22,13 +23,13 @@ venueCltr.createVenue = async (req,res)=>{
         const existingVenue = await Venue.findOne({ venueName, address });
 
         if (existingVenue) {
-            return res.status(400).json({
-            message: "A venue with the same name and address already exists.",
-        })
-    }
+            return res.status(400).json({ errors: "A venue with the same name and address already exists." })
+        }
 
-        console.log('Images:', req.files.images);
-        console.log('Documents:', req.files.documents);
+        // console.log(req.body)
+        // console.log('Images:', req.files.images);
+        // console.log('Documents:', req.files.documents);
+        const parsedOwnerContact = JSON.parse(ownerContact);
   
         // Upload images to Cloudinary
         const imageUploadPromises = req.files.images?.map((file) =>
@@ -46,6 +47,12 @@ venueCltr.createVenue = async (req,res)=>{
         // Extract URLs of the uploaded files
         const imageUrls = imageResults.map((result) => result.secure_url);
         const documentUrls = documentResults.map((result) => result.secure_url);
+
+        const DailyRate = parseInt(JSON.parse(price).dailyRate)
+        const HourlyRate = parseInt(JSON.parse(price).hourlyRate)
+
+        // console.log(DailyRate,HourlyRate)
+        
   
         // Create the venue document
         const newVenue = new Venue({
@@ -53,13 +60,17 @@ venueCltr.createVenue = async (req,res)=>{
           description,
           address,
           capacity,
-          price,
+          price:{
+            ...price,dailyRate:DailyRate,hourlyRate:HourlyRate
+          },
           amenities,
           ownerId: req.currentUser.userId, // Assuming you have user authentication in place
-          ownerContact,
+          ownerContact:parsedOwnerContact,
           documents: documentUrls,
           images: imageUrls,
         });
+
+        // console.log(newVenue)
   
         // Save to the database
         const savedVenue = await newVenue.save();
@@ -67,12 +78,11 @@ venueCltr.createVenue = async (req,res)=>{
         // Return success response
         res.status(201).json({
           message: "Venue created successfully",
-
           venue: savedVenue,
         });
       } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json([{ errors: "Internal server error" }]);
       }
 }
 
@@ -82,7 +92,7 @@ venueCltr.getAllVenues = async (req, res) => {
     const venues = await Venue.find();
     res.status(200).json(venues);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch venues", error: error.message });
+    res.status(500).json({ errors: "Failed to fetch venues" });
   }
 };
 
@@ -92,37 +102,71 @@ venueCltr.getVenueById = async (req, res) => {
     const { id } = req.params;
     const venue = await Venue.findById(id);
     if (!venue) {
-      return res.status(404).json({ message: "Venue not found" });
+      return res.status(404).json({ errors: "Venue not found" });
     }
     res.status(200).json(venue);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch venue", error: error.message });
+    res.status(500).json({ errors: "Failed to fetch venue" });
   }
 };
 
 // Get venues by owner
 venueCltr.getVenuesByOwner = async (req, res) => {
   try {
-    const { ownerId } = req.params;
+    const  ownerId  = req.params.id;
+    // console.log(ownerId)
     const venues = await Venue.find({ ownerId });
+    // console.log(venues)
     if (!venues.length) {
-      return res.status(404).json({ message: "No venues found for the owner" });
+      return res.status(404).json({ errors: "No venues found for the owner" });
     }
     res.status(200).json(venues);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch venues", error: error.message });
+    res.status(500).json({ errors: "Failed to fetch venues" });
   }
 };
 
 // Get verified venues
 venueCltr.getVerifiedVenues = async (req, res) => {
   try {
-    const verifiedVenues = await Venue.find({ verificationStatus: "approved" });
-    res.status(200).json(verifiedVenues);
+    const { search = "", sort = "default", page = 1, limit = 6 } = req.query;
+    const query = { verificationStatus: "approved" };
+
+    // 🔹 Search by Venue Name or Address
+    if (search) {
+      query.$or = [
+        { venueName: { $regex: search, $options: "i" } }, // Case-insensitive search
+        { address: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // 🔹 Sorting Logic
+    let sortOption = {};
+    if (sort === "priceLow") sortOption["price.dailyRate"] = 1; // Ascending
+else if (sort === "priceHigh") sortOption["price.dailyRate"] = -1; // Descending
+
+    // 🔹 Pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // 🔹 Fetch venues with filters
+    const verifiedVenues = await Venue.find(query)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // 🔹 Count total matching venues for pagination
+    const totalVenues = await Venue.countDocuments(query);
+
+    res.status(200).json({
+      venues: verifiedVenues,
+      totalPages: Math.ceil(totalVenues / parseInt(limit)),
+      currentPage: parseInt(page),
+    });
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch verified venues", error: error.message });
+    res.status(500).json({ errors: "Failed to fetch verified venues" });
   }
 };
+
 
 venueCltr.deleteVenue = async(req,res)=>{
   const id = req.params.id
@@ -131,7 +175,7 @@ venueCltr.deleteVenue = async(req,res)=>{
     res.json({message:'venue deleted successfully',venue})
 
   }catch(err){
-    res.status(500).json({error:'som'})
+    res.status(500).json({ errors: "Failed to delete venue" });
   }
 }
   
@@ -143,7 +187,7 @@ venueCltr.updateVenue = async (req, res) => {
     // Check if the venue exists
     const venue = await Venue.findById(id);
     if (!venue) {
-      return res.status(404).json({ message: "Venue not found" });
+      return res.status(404).json({ errors: "Venue not found" });
     }
 
     // Update the venue
@@ -154,7 +198,7 @@ venueCltr.updateVenue = async (req, res) => {
 
     res.status(200).json({ message: "Venue updated successfully", venue: updatedVenue });
   } catch (error) {
-    res.status(500).json({ message: "Failed to update venue", error: error.message });
+    res.status(500).json({ errors: "Failed to update venue" });
   }
 };
 export default venueCltr

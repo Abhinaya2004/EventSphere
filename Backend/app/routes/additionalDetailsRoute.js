@@ -6,6 +6,20 @@ import authorizeUser from "../middlewares/authorizeUser.js";
 
 const router = express.Router();
 
+router.get(
+  "/profile/:id",
+  authenticateUser,
+  authorizeUser(["host", "renter"]),
+  additionalDetailsCltr.profile 
+);
+
+router.patch(
+  "/profile/update/:id",
+  authenticateUser,
+  authorizeUser(["host", "renter"]),
+  additionalDetailsCltr.updateProfile
+);
+
 
 router.post(
   "/additional-details",
@@ -14,5 +28,6 @@ router.post(
   authorizeUser(["host", "renter"]),
   additionalDetailsCltr.create
 );
+
 
 export default router;

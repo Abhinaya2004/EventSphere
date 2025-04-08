@@ -36,102 +36,57 @@ export const venueValidationSchema = {
       },
       toInt: true, // Converts the value to an integer
     },
-    "price.dailyRate": {
-      exists: {
-        errorMessage: "Daily rate must be specified",
-      },
-      isFloat: {
-        options: { min: 0 },
-        errorMessage: "Daily rate must be a valid positive number",
-      },
-      toFloat: true, // Converts the value to a float
-    },
-    "price.hourlyRate": {
-      exists: {
-        errorMessage: "Hourly rate must be specified",
-      },
-      isFloat: {
-        options: { min: 0 },
-        errorMessage: "Hourly rate must be a valid positive number",
-      },
-      toFloat: true, // Converts the value to a float
-    },
-    "price.minHourlyDuration": {
-      optional: {
-        options: { nullable: true },
-      },
-      isInt: {
-        options: { min: 1 },
-        errorMessage: "Minimum hourly duration must be a positive integer",
-      },
-      toInt: true, // Converts the value to an integer
-      customSanitizer: {
-        options: (value) => value ?? 1, // Default value is 1
-      },
-    },
-    "price.maxHourlyDuration": {
-      optional: {
-        options: { nullable: true },
-      },
-      isInt: {
-        options: { min: 1 },
-        errorMessage: "Maximum hourly duration must be a positive integer",
-      },
-      toInt: true, // Converts the value to an integer
-      customSanitizer: {
-        options: (value) => value ?? 8, // Default value is 8
-      },
-    },
-    amenities: {
-      optional: {
-        options: { nullable: true },
-      },
-      isArray: {
-        errorMessage: "Amenities must be an array of strings",
-      },
+    price: {
       custom: {
-        options: (value) => {
-          if (value && value.some((item) => typeof item !== "string")) {
-            throw new Error("Each amenity must be a string");
+        options: (value, { req }) => {
+          try {
+            // Parse `price` JSON string before accessing its properties
+            const parsedPrice = JSON.parse(value);
+            // console.log(parsedPrice)
+  
+            // Ensure `price` is an object
+            if (typeof parsedPrice !== "object" || parsedPrice === null) {
+              throw new Error("Invalid price format");
+            }
+  
+            req.body.price = parsedPrice;// Save parsed object back to req.body
+            req.body.price.dailyRate = parseInt(req.body.price.dailyRate)
+            req.body.price.hourlyRate = parseInt(req.body.price.hourlyRate)
+            console.log(typeof(req.body.price.dailyRate))
+            return true;
+          } catch (err) {
+            throw new Error("Invalid price JSON format");
           }
-          return true;
         },
       },
     },
-    "ownerContact.email": {
-      exists: {
-        errorMessage: "Owner email must be provided",
-      },
-      isEmail: {
-        errorMessage: "Owner email must be a valid email address",
-      },
-      trim: true,
-      normalizeEmail: true,
-    },
-    "ownerContact.phone": {
-      exists: {
-        errorMessage: "Owner phone number must be provided",
-      },
-      isMobilePhone: {
-        errorMessage: "Owner phone number must be a valid phone number",
+
+  "amenities": {
+    optional: true,
+    custom: {
+      options: (value) => {
+        if (typeof value === "string") {
+          return value.split(",").map((item) => item.trim()); // Convert CSV string to array
+        }
+        return Array.isArray(value) ? value : []; // Ensure it’s always an array
       },
     },
-    documents: {
-      optional: {
-        options: { nullable: true },
-      },
-      isArray: {
-        errorMessage: "Documents must be an array of strings (URLs)",
-      },
-      custom: {
-        options: (value) => {
-          if (value && value.some((item) => typeof item !== "string")) {
-            throw new Error("Each document must be a valid string (URL)");
+  },
+  "ownerContact": {
+    optional: true,
+    custom: {
+      options: (value) => {
+        if (typeof value === "string") {
+          try {
+            return JSON.parse(value); // Parse JSON string
+          } catch {
+            throw new Error("Invalid owner contact format");
           }
-          return true;
-        },
+        }
+        return value;
       },
     },
+  },
     images: {
       optional: {
         options: { nullable: true },

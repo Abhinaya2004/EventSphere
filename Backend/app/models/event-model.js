@@ -39,6 +39,10 @@ const eventSchema = new Schema(
         type: String, // Organizer's custom address (Offline)
         trim: true,
       },
+      streamingLink: {
+        type: String, // URL for live streaming (Online mode)
+        trim: true,
+      },
       organizer: {
         type:Schema.Types.ObjectId,
         ref: "User",
