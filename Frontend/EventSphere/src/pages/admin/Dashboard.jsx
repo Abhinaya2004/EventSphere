@@ -52,7 +52,7 @@ const Dashboard = () => {
       setDashboardData(response.data);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
-      setError(error.response?.data?.error || "Failed to fetch dashboard data");
+      setError(error.response?.data?.errors || "Failed to fetch dashboard data");
     } finally {
       setLoading(false);
     }

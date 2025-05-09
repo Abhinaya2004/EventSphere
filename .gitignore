@@ -1,3 +1,9 @@
 # Ignore environment variable file
 .env
 node_modules/
+
+# Byte-compiled / cache
+__pycache__/
+
+# Virtual environment
+venv/

@@ -18,7 +18,10 @@ userCltr.register = async (req, res) => {
     if(!Errors.isEmpty()){
         return res.status(400).json({ errors: Errors.array()[0].msg })
     }
+    let body = req.body
     try {
+        const salt = await bcrypt.genSalt()
+        body.password = await bcrypt.hash(body.password,salt)
         const user=await User.create(body)
         res.status(201).json(user)
     }catch(err){
@@ -34,6 +37,7 @@ userCltr.login = async (req, res) => {
     }
     try {
         const { email, password } = req.body;
+        console.log(email,password)
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(404).json({ errors: "Invalid email, password, or role" });
@@ -46,12 +50,13 @@ userCltr.login = async (req, res) => {
 
         const token = jwt.sign(
             { userId: user._id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: "24h" }
+            process.env.SECRET_KEY,
+            { expiresIn: "7d" }
         );
-
-        res.json({ token, user: { email: user.email, role: user.role } });
+        // console.log(token)
+        res.json({ token :`bearer ${token}`, user: { email: user.email, role: user.role } });
     } catch (error) {
+        console.log(error)
         return res.status(500).json({ errors: "Something went wrong" });
     }
 };

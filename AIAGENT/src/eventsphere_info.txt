@@ -1,0 +1,122 @@
+
+# EventSphere Platform Documentation
+
+## Overview
+EventSphere is a comprehensive event management and venue rental platform that allows users to host events, rent venues, and purchase tickets. It supports both online and offline events and provides role-based access to manage users and data securely.
+
+---
+
+## User Roles
+
+### Admin
+- Can verify venues and approve event listings
+- Manages users and platform content
+- Has access to all system data and dashboards
+
+### Host
+- Can create and manage events
+- Can list their venue(s) for rent
+- Can view bookings and earnings
+- Receives payments after event/venue usage
+
+### Renter
+- Can search and book venues
+- Can view availability, features, and pricing
+- Makes secure payments via Razorpay/Stripe
+
+---
+
+## Creating Events
+- Only verified hosts can create events.
+- Required fields include: name, description, date, start/end time, mode (Online/Offline), category, venue or custom address, ticket types, and images.
+- Events have a status: Upcoming, Ongoing, Completed, or Cancelled.
+
+---
+
+## Booking Venues
+- Renters can view a list of verified venues.
+- Filters are available: location, capacity, price, features.
+- Pagination and sorting help in managing results.
+- Availability is checked dynamically before booking.
+- Secure payments are made to hold the booking.
+
+---
+
+## Ticketing System
+- Hosts can define multiple ticket types with custom names, prices, and quantity.
+- Users can book available tickets and pay instantly.
+- Event organizers get access to booking data and revenue details.
+
+---
+
+## Payments & Payouts
+
+### Payment Gateways:
+- Supports both Razorpay and Stripe.
+
+### Platform Fee:
+- EventSphere charges a 10% platform fee per booking.
+- The remaining 90% is released to the host/renter after event or venue use begins.
+
+### Stripe Payouts:
+- Immediate payments with auto-split between EventSphere and host.
+- Testing is done in Stripe test mode before going live.
+
+---
+
+## Refund & Cancellation Policy
+- Users can cancel bookings up to 24 hours before the event or venue time.
+- A 10% fee is retained; the rest is refunded to the user.
+- Hosts and renters are notified instantly on cancellation.
+
+---
+
+## Event Statuses
+- **Upcoming**: Scheduled for a future date
+- **Ongoing**: Happening now
+- **Completed**: Finished successfully
+- **Cancelled**: Called off manually or due to policy
+
+---
+
+## Admin Dashboard Features
+- Manage all users, events, and venues.
+- View and verify venue listings.
+- Approve or reject new events.
+- View platform earnings and payout records.
+
+---
+
+## Technologies Used
+
+### Frontend:
+- React.js
+- Redux Toolkit
+- MUI (Material UI)
+- useContext, useReducer
+
+### Backend:
+- Express.js
+- MongoDB
+- Node.js
+- Razorpay & Stripe API for payments
+
+---
+
+## Use Cases
+- Hosting ticketed online webinars or offline concerts
+- Renting venues for conferences, weddings, or meetups
+- Discovering trending venues in specific cities
+- Managing end-to-end event logistics in one place
+
+---
+
+## FAQs (for LLM Use)
+
+- Where can I see my booked venues?
+- How do I upload my venue?
+- Can I create an event without a venue?
+- Is there a service fee for users?
+- What happens if a host cancels my event?
+
+(All of these can be answered from the content above.)

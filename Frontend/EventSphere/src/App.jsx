@@ -45,12 +45,14 @@ import BookEvent from './pages/user/BookEvents';
 import BookEventDetails from './pages/user/BookEventDetails';
 
 import BookingList from './components/BookingList.jsx';
+import ChatWidget from './components/ChatPopup.jsx';
 
 const App = () => {
   return (
     <div>
       <Navbar/>
       <ToastContainer position="top-right" autoClose={3000} theme="dark" />
+      <ChatWidget/>
 
       <Routes>
         {/* Public Routes */}

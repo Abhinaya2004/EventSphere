@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 
 const authenticateUser = (req,res,next)=>{
     let token = req.headers['authorization'];
+    // console.log(token)
     if(!token){
         return res.status(401).json({errors:'token not provided'})
     }

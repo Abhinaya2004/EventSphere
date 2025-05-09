@@ -7,7 +7,7 @@ import authorizeUser from "../middlewares/authorizeUser.js";
 const router = express.Router();
 
 // Dashboard stats route
-router.get('/dashboard/stats', authenticateUser, authorizeUser(['admin']), adminCltr.getDashboardStats);
+router.get('/dashboard/stats', authenticateUser, authorizeUser(['admin']),adminCltr.getDashboardStats);
 
 // Additional details routes
 router.get('/user/:id/additional-details', authenticateUser, authorizeUser(['admin']), adminCltr.additionalDetails);

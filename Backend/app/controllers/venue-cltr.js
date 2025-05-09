@@ -90,6 +90,7 @@ venueCltr.createVenue = async (req,res)=>{
 venueCltr.getAllVenues = async (req, res) => {
   try {
     const venues = await Venue.find();
+    // console.log(venues)
     res.status(200).json(venues);
   } catch (error) {
     res.status(500).json({ errors: "Failed to fetch venues" });

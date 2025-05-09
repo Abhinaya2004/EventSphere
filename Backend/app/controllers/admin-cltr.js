@@ -67,64 +67,44 @@ adminCltr.additionalDetails = async (req, res) => {
 };
 
 adminCltr.getDashboardStats = async (req, res) => {
-  try {
-    // Check if user is admin
-    if (req.currentUser.role !== "admin") {
-      return res.status(403).json({ 
-        errors: "Access denied. Admin only."
-      });
-    }
+  if (req.currentUser.role !== "admin") {
+    return res.status(403).json({ errors: "Access denied. Admin only." });
+  }
 
-    // Get total counts
+  try {
     const totalUsers = await User.countDocuments({ role: { $ne: "admin" } });
     const totalEvents = await Event.countDocuments();
     const totalVenues = await Venue.countDocuments();
-
-    // Get recent events (last 4)
-    const recentEvents = await Event.find()
-      .sort({ createdAt: -1 })
-      .limit(4)
-      .select("eventName date status");
-
-    // Get recent venues (last 4)
-    const recentVenues = await Venue.find()
-      .sort({ createdAt: -1 })
-      .limit(4)
-      .select("venueName verificationStatus price");
-
-    // Get recent users (last 4)
-    const recentUsers = await User.find({ role: { $ne: "admin" } })
-      .sort({ createdAt: -1 })
-      .limit(4)
-      .select("email role createdAt");
-
-    // Get total revenue from platform fees of successful payments
-    const [venuePayments, eventPayments] = await Promise.all([
-      VenuePayment.find({ status: "Success" }),
-      EventPayment.find({ status: "Success" }),
-    ]);
-
-    const totalRevenue =
-      venuePayments.reduce((sum, payment) => sum + (payment.platformFee || 0), 0) +
-      eventPayments.reduce((sum, payment) => sum + (payment.platformFee || 0), 0);
-
-    res.json({
-      stats: {
-        totalUsers,
-        totalEvents,
-        totalVenues,
-        totalRevenue,
-      },
+  
+    const recentEvents = await Event.find().sort({ createdAt: -1 }).limit(4).select("eventName date status");
+    const recentVenues = await Venue.find().sort({ createdAt: -1 }).limit(4).select("venueName verificationStatus price");
+    const recentUsers = await User.find({ role: { $ne: "admin" } }).sort({ createdAt: -1 }).limit(4).select("email role createdAt");
+  
+    const venuePayments = await VenuePayment.find({ status: "Success" });
+    const eventPayments = await EventPayment.find({ status: "Success" });
+  
+    const totalRevenue = 
+      venuePayments.reduce((sum, p) => sum + (p.platformFee || 0), 0) + 
+      eventPayments.reduce((sum, p) => sum + (p.platformFee || 0), 0);
+  
+    const responseData = {
+      stats: { totalUsers, totalEvents, totalVenues, totalRevenue },
       recentEvents,
       recentVenues,
       recentUsers,
-    });
+    };
+  
+    // console.log(responseData);
+    return res.json(responseData); // ✅ Final and only response
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
-    res.status(500).json({ 
-      errors: "Failed to fetch dashboard statistics"
-    });
+    if (!res.headersSent) {
+      return res.status(500).json({ errors: "Failed to fetch dashboard statistics" });
+    } else {
+      console.error("Response already sent. Skipping error response.");
+    }
   }
-};
+}
+
 
   export default adminCltr
